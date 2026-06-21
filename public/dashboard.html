@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-position: center; background-attachment: fixed; color: #333; }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); }
+        .navbar { padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.3); background: rgba(255, 255, 255, 0.95); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .navbar h2 { margin: 0; font-size: 20px; text-align: center; background: -webkit-linear-gradient(#6f42c1, #e73c7e); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-right { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; }
+        .user-badge { background: #f0e6ff; padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #6f42c1; }
+        
+        .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); white-space: nowrap; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .btn-logout { background: linear-gradient(45deg, #ff416c, #ff4b2b); }
+        .btn-add { background: linear-gradient(45deg, #11998e, #38ef7d); margin-top: 10px; width: 100%; padding: 12px; font-size: 16px; }
+        .btn-issue { background: linear-gradient(45deg, #4facfe, #00f2fe); font-size: 12px; }
+        .btn-return { background: linear-gradient(45deg, #f6d365, #fda085); color: #fff; font-size: 12px; }
+
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-card { padding: 20px; border-radius: 15px; text-align: center; position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; }
+        .stat-card:nth-child(1)::before { background: #38ef7d; }
+        .stat-card:nth-child(2)::before { background: #00f2fe; }
+        .stat-card:nth-child(3)::before { background: #ff416c; }
+        .stat-card h3 { font-size: 28px; margin: 0; color: #333; }
+        .stat-card p { margin: 8px 0 0 0; color: #666; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        .tabs { display: flex; flex-wrap: wrap; margin-bottom: 20px; gap: 8px; }
+        .tab-btn { flex: 1; min-width: 90px; padding: 12px 5px; background: rgba(255,255,255,0.8); border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: #555; transition: 0.3s; backdrop-filter: blur(5px); text-align: center; font-size: 13px; }
+        .tab-btn.active { background: #fff; color: #6f42c1; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .tab-content { display: none; animation: fadeIn 0.4s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .panel { border-radius: 15px; margin-bottom: 25px; overflow: hidden; }
+        .panel-header { background: rgba(255,255,255,0.95); padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: bold; display: flex; flex-direction: column; gap: 10px; color: #444; }
+        .panel-body { padding: 15px; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 15px; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.9); transition: 0.3s; outline: none; font-size: 14px; }
+        
+        .table-slider { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 650px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        th { background: rgba(0,0,0,0.04); color: #555; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        
+        .status-badge { padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .status-issued { background: #ffeeba; color: #856404; }
+        .status-returned { background: #d4edda; color: #155724; }
+        .status-overdue { background: #ff416c; color: white; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+        .modal { padding: 25px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
+        .modal h3 { margin-top: 0; color: #6f42c1; font-size: 22px; }
+        .modal input[type="date"] { margin-bottom: 15px; margin-top: 5px; }
+        #customSystemModal { z-index: 9999; }
+        #requestModalOverlay { z-index: 1000; }
+
+        @media (min-width: 768px) {
+            .navbar { flex-direction: row; padding: 15px 40px; }
+            .navbar h2 { font-size: 22px; text-align: left; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+            .panel-header { flex-direction: row; justify-content: space-between; align-items: center; padding: 18px 25px; }
+            .form-grid { grid-template-columns: repeat(3, 1fr); gap: 15px; }
+            .panel-body { padding: 25px; }
+            table { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="modal-overlay" id="customSystemModal">
+        <div class="modal glass">
+            <h3 id="sysModalTitle">Notification</h3>
+            <p id="sysModalText" style="margin-bottom: 20px; color: #444; font-size: 16px;"></p>
+            <input type="text" id="sysModalInput" style="display:none; margin-bottom: 20px;" placeholder="Type here...">
+            <div style="display:flex; gap:10px; justify-content: center;" id="sysModalButtons"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="requestModalOverlay">
+        <div class="modal glass">
+            <h3>Borrow Details</h3>
+            <input type="hidden" id="reqBookId">
+            <div style="text-align: left;">
+                
+                <div id="adminStudentSelectGroup" style="display:none; margin-bottom: 15px;">
+                    <label><strong>Search Registered Student:</strong></label>
+                    <input list="approvedStudentsDatalist" id="reqStudentUsername" placeholder="🔍 Type name or username..." style="margin-top: 5px; width: 100%;">
+                    <datalist id="approvedStudentsDatalist"></datalist>
+                </div>
+
+                <label><strong>Pick-up Date:</strong></label><input type="date" id="reqStartDate">
+                <label><strong>Return Date:</strong></label><input type="date" id="reqEndDate">
+            </div>
+            <div style="display:flex; gap:10px; margin-top: 10px;">
+                <button class="btn btn-add" style="margin-top:0;" onclick="submitRequest()">Issue Book</button>
+                <button class="btn btn-logout" style="width: 100%;" onclick="closeRequestModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="navbar">
+        <h2>✨ Library Management System</h2>
+        <div class="nav-right">
+            <span class="user-badge" id="roleDisplay">Role</span>
+            <button class="btn btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid" id="statsSection">
+            <div class="stat-card glass"><h3 id="statTotalBooks">0</h3><p>Total Books</p></div>
+            <div class="stat-card glass"><h3 id="statPendingReqs">0</h3><p>Pending Requests</p></div>
+            <div class="stat-card glass"><h3 id="statIssuedBooks">0</h3><p>Active Issues</p></div>
+        </div>
+
+        <div class="tabs" id="tabMenu">
+            <button class="tab-btn active" onclick="switchTab('catalog')">📚 Catalog</button>
+            <button class="tab-btn" id="tabApprovals" onclick="switchTab('approvals')">✅ Approvals</button>
+            <button class="tab-btn" id="tabIssueDesk" onclick="switchTab('issuedesk')">🔄 Logs</button>
+            <button class="tab-btn" id="tabStudents" onclick="switchTab('students')">👥 Students</button>
+        </div>
+
+        <div id="catalog" class="tab-content active">
+            <div class="panel glass" id="addBookSection">
+                <div class="panel-header">➕ ADD NEW BOOK</div>
+                <div class="panel-body">
+                    <div class="form-grid">
+                        <input type="text" id="title" placeholder="Book Title">
+                        <input type="text" id="author" placeholder="Author">
+                        <input type="text" id="category" placeholder="Category (e.g. Science)">
+                        <input type="text" id="isbn" placeholder="ISBN Number">
+                        <input type="number" id="price" placeholder="Price ($)">
+                        <input type="number" id="quantity" placeholder="Total Quantity">
+                    </div>
+                    <button class="btn btn-add" onclick="addBook()">Save Book to Database</button>
+                </div>
+            </div>
+
+            <div class="panel glass">
+                <div class="panel-header">
+                    <span>📖 INVENTORY DASHBOARD</span>
+                    <input type="text" id="searchInput" placeholder="🔍 Search Title or Author..." style="max-width: 300px; padding: 8px 15px;" onkeyup="filterTable()">
+                </div>
+                <div class="panel-body">
+                    <div class="table-slider">
+                        <table id="catalogTable">
+                            <thead><tr><th>ISBN</th><th>Title</th><th>Category</th><th>Author</th><th>Stock</th><th>Action</th></tr></thead>
+                            <tbody id="bookTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="approvals" class="tab-content">
+            <div class="panel glass">
+                <div class="panel-header">🔔 PENDING BOOK REQUESTS</div>
+                <div class="panel-body">
+                    <div class="table-slider">
+                        <table>
+                            <thead><tr><th>Student User</th><th>Book Title</th><th>Take Date</th><th>Give Date</th><th>Action</th></tr></thead>
+                            <tbody id="requestsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="issuedesk" class="tab-content">
+            <div class="panel glass">
+                <div class="panel-header">💳 ISSUED BOOKS LOG</div>
+                <div class="panel-body">
+                    <div class="table-slider">
+                        <table>
+                            <thead><tr><th>Student User</th><th>Book Title</th><th>Issue Date</th><th>Due Date</th><th>Status</th><th id="issueActionHeader">Action</th></tr></thead>
+                            <tbody id="issuedTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="students" class="tab-content">
+            <div class="panel glass">
+                <div class="panel-header" style="color: #dc3545;">⚠️ PENDING SIGN-UP APPROVALS</div>
+                <div class="panel-body">
+                    <div class="table-slider">
+                        <table>
+                            <thead><tr><th>Name</th><th>Username</th><th>Roll No</th><th>Sem / Sec</th><th>Action</th></tr></thead>
+                            <tbody id="pendingStudentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel glass">
+                <div class="panel-header">
+                    <span>👥 ALL APPROVED STUDENTS</span>
+                    <input type="text" id="studentSearchInput" placeholder="🔍 Search Name or Username..." style="max-width: 300px; padding: 8px 15px;" onkeyup="filterStudents()">
+                </div>
+                <div class="panel-body">
+                    <div class="table-slider">
+                        <table>
+                            <thead><tr><th>Username</th><th>Password</th><th>Full Name</th><th>Roll No</th><th>Sem / Sec</th></tr></thead>
+                            <tbody id="approvedStudentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const userRole = localStorage.getItem("userRole");
+        const userName = localStorage.getItem("userName");
+        if (!userRole) window.location.href = "index.html";
+
+        document.getElementById('roleDisplay').innerText = `User: ${userName} | Role: ${userRole}`;
+
+        if (userRole === "Student") {
+            document.getElementById('addBookSection').style.display = 'none';
+            document.getElementById('tabApprovals').style.display = 'none';
+            document.getElementById('tabStudents').style.display = 'none';
+            document.getElementById('issueActionHeader').style.display = 'none';
+        }
+
+        function closeSysModal() { document.getElementById('customSystemModal').style.display = 'none'; }
+        function customAlert(title, message) {
+            document.getElementById('sysModalTitle').innerText = title;
+            document.getElementById('sysModalText').innerText = message;
+            document.getElementById('sysModalInput').style.display = 'none';
+            document.getElementById('sysModalButtons').innerHTML = `<button class="btn btn-add" style="margin:0; width:120px;" onclick="closeSysModal()">OK</button>`;
+            document.getElementById('customSystemModal').style.display = 'flex';
+        }
+        function customConfirm(title, message, onYes) {
+            document.getElementById('sysModalTitle').innerText = title;
+            document.getElementById('sysModalText').innerText = message;
+            document.getElementById('sysModalInput').style.display = 'none';
+            window.tempConfirmHandler = () => { closeSysModal(); onYes(); };
+            document.getElementById('sysModalButtons').innerHTML = `
+                <button class="btn btn-add" style="margin:0; width:100px;" onclick="window.tempConfirmHandler()">Yes</button>
+                <button class="btn btn-logout" style="margin:0; width:100px;" onclick="closeSysModal()">Cancel</button>`;
+            document.getElementById('customSystemModal').style.display = 'flex';
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+            
+            if(tabId === 'approvals') fetchRequests();
+            if(tabId === 'issuedesk') fetchIssuedBooks();
+            if(tabId === 'students') fetchStudents();
+        }
+
+        async function fetchStats() {
+            const res = await fetch('/api/stats');
+            const stats = await res.json();
+            document.getElementById('statTotalBooks').innerText = stats.books;
+            document.getElementById('statIssuedBooks').innerText = stats.issued;
+            document.getElementById('statPendingReqs').innerText = stats.pending;
+        }
+
+        function filterTable() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#bookTableBody tr');
+            rows.forEach(row => {
+                const title = row.cells[1].innerText.toLowerCase();
+                const author = row.cells[3].innerText.toLowerCase();
+                row.style.display = (title.includes(searchText) || author.includes(searchText)) ? '' : 'none';
+            });
+        }
+
+        function filterStudents() {
+            const searchText = document.getElementById('studentSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#approvedStudentsTableBody tr');
+            rows.forEach(row => {
+                const username = row.cells[0].innerText.toLowerCase();
+                const fullName = row.cells[2].innerText.toLowerCase();
+                row.style.display = (username.includes(searchText) || fullName.includes(searchText)) ? '' : 'none';
+            });
+        }
+
+        async function fetchStudents() {
+            const resPending = await fetch('/api/students/pending');
+            const pending = await resPending.json();
+            const ptbody = document.getElementById('pendingStudentsTableBody');
+            ptbody.innerHTML = '';
+            pending.forEach(s => {
+                ptbody.innerHTML += `<tr>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.username}</td>
+                    <td>${s.roll_no}</td>
+                    <td>Sem ${s.semester} / Sec ${s.section}</td>
+                    <td>
+                        <button class="btn btn-add" style="margin:0; padding:6px 10px; font-size:12px;" onclick="approveStudent(${s.id})">Approve</button>
+                        <button class="btn btn-logout" style="margin:0; padding:6px 10px; font-size:12px;" onclick="rejectStudent(${s.id})">Reject</button>
+                    </td>
+                </tr>`;
+            });
+
+            const resApproved = await fetch('/api/students/approved');
+            const approved = await resApproved.json();
+            const atbody = document.getElementById('approvedStudentsTableBody');
+            atbody.innerHTML = '';
+            approved.forEach(s => {
+                atbody.innerHTML += `<tr>
+                    <td><span class="user-badge" style="margin:0">${s.username}</span></td>
+                    <td style="color:#dc3545; font-family:monospace;">${s.password}</td>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.roll_no}</td>
+                    <td>Sem ${s.semester} / Sec ${s.section}</td>
+                </tr>`;
+            });
+        }
+
+        async function approveStudent(id) {
+            await fetch(`/api/students/${id}/approve`, { method: 'POST' });
+            fetchStudents();
+        }
+
+        async function rejectStudent(id) {
+            await fetch(`/api/students/${id}/reject`, { method: 'POST' });
+            fetchStudents();
+        }
+
+        async function fetchBooks() {
+            const res = await fetch('/api/books');
+            const books = await res.json();
+            const tbody = document.getElementById('bookTableBody');
+            tbody.innerHTML = '';
+
+            books.forEach(book => {
+                let actionHTML = "";
+                if (userRole === "Management" || userRole === "Teacher") {
+                    actionHTML = `<button class="btn btn-issue" onclick="openRequestModal(${book.id})">Direct Issue</button> ${userRole === "Management" ? `<button class="btn btn-logout" style="font-size:12px;" onclick="deleteBook(${book.id})">Del</button>` : ''}`;
+                } else if (userRole === "Student") {
+                    actionHTML = `<button class="btn btn-issue" style="background: linear-gradient(45deg, #11998e, #38ef7d);" onclick="openRequestModal(${book.id})">Request Borrow</button>`;
+                }
+                const stockColor = book.available > 0 ? '#155724' : '#721c24';
+                const stockBg = book.available > 0 ? '#d4edda' : '#f8d7da';
+
+                tbody.innerHTML += `<tr>
+                    <td>${book.isbn}</td><td><strong>${book.title}</strong></td>
+                    <td><span style="background: rgba(0,0,0,0.05); padding: 4px 8px; border-radius: 4px;">${book.category}</span></td>
+                    <td>${book.author}</td>
+                    <td><strong style="color:${stockColor}; background:${stockBg}; padding:4px 8px; border-radius:4px;">${book.available} / ${book.quantity}</strong></td>
+                    <td>${actionHTML}</td>
+                </tr>`;
+            });
+            fetchStats();
+        }
+
+        async function openRequestModal(bookId) { 
+            document.getElementById('reqBookId').value = bookId; 
+            document.getElementById('reqStartDate').value = '';
+            document.getElementById('reqEndDate').value = '';
+            document.getElementById('reqStudentUsername').value = ''; 
+
+            if (userRole !== "Student") {
+                document.getElementById('adminStudentSelectGroup').style.display = 'block';
+                const res = await fetch('/api/students/approved');
+                const approvedStudents = await res.json();
+                const datalist = document.getElementById('approvedStudentsDatalist');
+                
+                datalist.innerHTML = ''; 
+                approvedStudents.forEach(s => {
+                    datalist.innerHTML += `<option value="${s.username}">${s.name} (${s.roll_no})</option>`;
+                });
+            }
+
+            document.getElementById('requestModalOverlay').style.display = 'flex'; 
+        }
+        
+        function closeRequestModal() { document.getElementById('requestModalOverlay').style.display = 'none'; }
+
+        function submitRequest() {
+            const book_id = document.getElementById('reqBookId').value;
+            const start_date = document.getElementById('reqStartDate').value;
+            const end_date = document.getElementById('reqEndDate').value;
+            
+            let student_username = userName; 
+
+            if (userRole !== "Student") {
+                student_username = document.getElementById('reqStudentUsername').value;
+                if (!student_username) return customAlert("Missing Info", "Please search and select a student.");
+            }
+            
+            if(!start_date || !end_date) return customAlert("Missing Info", "Please select both dates!");
+            
+            closeRequestModal();
+            processRequestData(book_id, student_username, start_date, end_date);
+        }
+
+        async function processRequestData(book_id, student_username, start_date, end_date) {
+            const res = await fetch('/api/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ book_id, student_username, start_date, end_date }) });
+            const data = await res.json();
+
+            if (res.ok) {
+                customAlert("Success", userRole === "Student" ? "Request sent to Admin!" : "Book formally issued to student.");
+                fetchStats();
+            } else {
+                customAlert("Error", data.error || "Failed to issue book. Verify the student username is correct.");
+            }
+        }
+
+        async function fetchRequests() {
+            const res = await fetch('/api/requests');
+            const requests = await res.json();
+            const tbody = document.getElementById('requestsTableBody');
+            tbody.innerHTML = '';
+            requests.forEach(req => {
+                tbody.innerHTML += `<tr>
+                    <td><span class="user-badge" style="margin:0;">${req.student_username}</span></td>
+                    <td><strong>${req.title}</strong> <br><small>ISBN: ${req.isbn}</small></td>
+                    <td>${req.start_date}</td><td>${req.end_date}</td>
+                    <td>
+                        <button class="btn btn-add" style="margin:0; padding:6px 12px; font-size:12px;" onclick="approveReq(${req.id})">Approve</button>
+                        <button class="btn btn-logout" style="margin:0; padding:6px 12px; font-size:12px;" onclick="rejectReq(${req.id})">Reject</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        async function approveReq(id) {
+            const res = await fetch(`/api/request/${id}/approve`, { method: 'POST' });
+            if(res.ok) { customAlert("Approved", "Book issued."); fetchRequests(); fetchBooks(); } else { customAlert("Error", "Action failed."); }
+        }
+        async function rejectReq(id) { await fetch(`/api/request/${id}/reject`, { method: 'POST' }); fetchRequests(); fetchStats(); }
+
+        async function fetchIssuedBooks() {
+            const res = await fetch('/api/issued');
+            const logs = await res.json();
+            const tbody = document.getElementById('issuedTableBody');
+            tbody.innerHTML = '';
+            logs.forEach(log => {
+                if (userRole === "Student" && log.student_username !== userName) return;
+                const dueDateObj = new Date(log.due_date);
+                const now = new Date();
+                let statusClass = log.status === 'Issued' ? 'status-issued' : 'status-returned';
+                let displayStatus = log.status;
+                if (log.status === 'Issued' && now > dueDateObj) { statusClass = 'status-overdue'; displayStatus = 'OVERDUE'; }
+                let actionBtn = "";
+                if (log.status === 'Issued' && userRole !== "Student") { actionBtn = `<button class="btn btn-return" onclick="returnBook(${log.issue_id})">Mark Returned</button>`; }
+                const actionCell = userRole === "Student" ? "" : `<td>${actionBtn}</td>`;
+
+                tbody.innerHTML += `<tr>
+                    <td><strong>${log.student_username}</strong></td>
+                    <td><strong>${log.title}</strong></td>
+                    <td>${log.issue_date}</td>
+                    <td style="${displayStatus === 'OVERDUE' ? 'color:#dc3545; font-weight:bold;' : ''}">${log.due_date}</td>
+                    <td><span class="status-badge ${statusClass}">${displayStatus}</span></td>
+                    ${actionCell}
+                </tr>`;
+            });
+        }
+
+        function returnBook(issueId) { customConfirm("Return Book", "Confirm return?", async () => { await fetch(`/api/return/${issueId}`, { method: 'POST' }); fetchIssuedBooks(); fetchBooks(); }); }
+
+        async function addBook() {
+            const data = {
+                title: document.getElementById('title').value, author: document.getElementById('author').value,
+                category: document.getElementById('category').value || "Uncategorized", isbn: document.getElementById('isbn').value,
+                price: document.getElementById('price').value || 0, quantity: document.getElementById('quantity').value || 1
+            };
+            if(!data.title || !data.isbn) return customAlert("Missing Info", "Book Title and ISBN are required.");
+            await fetch('/api/books', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            document.querySelectorAll('input:not(#searchInput)').forEach(input => input.value = '');
+            fetchBooks(); customAlert("Saved", "New book added!");
+        }
+
+        function deleteBook(id) { customConfirm("Delete Book", "Permanently delete?", async () => { await fetch(`/api/books/${id}`, { method: 'DELETE' }); fetchBooks(); }); }
+        function logout() { localStorage.clear(); window.location.href = "index.html"; }
+
+        fetchBooks();
+    </script>
+</body>
+</html>

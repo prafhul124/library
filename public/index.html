@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Portal</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; }
+        .bg-image { 
+            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1920&q=80'); 
+            background-size: cover; 
+            background-position: center; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 15px; 
+            box-sizing: border-box; 
+        }
+        
+        .login-box { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); padding: 40px 30px; border-radius: 15px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); width: 100%; max-width: 400px; text-align: center; color: white; box-sizing: border-box; }
+        .login-box h2 { margin-top: 0; margin-bottom: 25px; font-size: 28px; text-shadow: 1px 1px 4px rgba(0,0,0,0.5); }
+        
+        .tab-toggle { display: flex; margin-bottom: 20px; background: rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden; }
+        .tab-toggle button { flex: 1; padding: 10px; background: transparent; border: none; color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .tab-toggle button.active { background: #6f42c1; }
+
+        .input-group { position: relative; margin-bottom: 15px; text-align: left; }
+        .input-group input { width: 100%; padding: 12px 15px; background: rgba(255, 255, 255, 0.9); border: none; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; transition: 0.3s; color: #333; }
+        .input-group input:focus { box-shadow: 0 0 10px rgba(111, 66, 193, 0.8); }
+        
+        .signup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .btn-submit { width: 100%; padding: 14px; background-color: #6f42c1; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-submit:hover { background-color: #59339d; transform: translateY(-2px); }
+        
+        .error { background: rgba(220, 53, 69, 0.9); color: white; padding: 10px; border-radius: 5px; font-size: 14px; margin-top: 15px; display: none; }
+        .success { background: rgba(40, 167, 69, 0.9); color: white; padding: 15px; border-radius: 5px; font-size: 14px; margin-top: 15px; display: none; }
+        
+        #signupForm { display: none; }
+    </style>
+</head>
+<body>
+    <div class="bg-image">
+        <div class="login-box">
+            <h2>Library Portal</h2>
+            
+            <div class="tab-toggle">
+                <button id="btnLoginTab" class="active" onclick="switchTab('login')">Login</button>
+                <button id="btnSignupTab" onclick="switchTab('signup')">Student Sign Up</button>
+            </div>
+            
+            <div id="loginForm">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Username" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Password">
+                </div>
+                <button class="btn-submit" onclick="attemptLogin()">Secure Login</button>
+                <div class="error" id="errorMsg"></div>
+            </div>
+
+            <div id="signupForm">
+                <div class="input-group">
+                    <input type="text" id="regName" placeholder="Full Name">
+                </div>
+                <div class="signup-grid">
+                    <div class="input-group"><input type="text" id="regSection" placeholder="Section (e.g. A)"></div>
+                    <div class="input-group"><input type="text" id="regSemester" placeholder="Semester"></div>
+                    <div class="input-group"><input type="text" id="regYear" placeholder="Year"></div>
+                    <div class="input-group"><input type="text" id="regRoll" placeholder="Roll No"></div>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="regPassword" placeholder="Create a Password">
+                </div>
+                <button class="btn-submit" onclick="attemptSignup()">Submit Request</button>
+                <div class="success" id="successMsg"></div>
+                <div class="error" id="regErrorMsg"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        localStorage.clear();
+
+        function switchTab(tab) {
+            document.getElementById('errorMsg').style.display = 'none';
+            document.getElementById('regErrorMsg').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+
+            if (tab === 'login') {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('signupForm').style.display = 'none';
+                document.getElementById('btnLoginTab').classList.add('active');
+                document.getElementById('btnSignupTab').classList.remove('active');
+            } else {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('signupForm').style.display = 'block';
+                document.getElementById('btnSignupTab').classList.add('active');
+                document.getElementById('btnLoginTab').classList.remove('active');
+            }
+        }
+
+        async function attemptLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const errBox = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem("userRole", data.user.role);
+                    localStorage.setItem("userName", data.user.username);
+                    window.location.href = "dashboard.html";
+                } else {
+                    errBox.innerText = "❌ " + data.message;
+                    errBox.style.display = 'block';
+                }
+            } catch (err) { errBox.innerText = "Server Error."; errBox.style.display = 'block'; }
+        }
+
+        async function attemptSignup() {
+            const data = {
+                name: document.getElementById('regName').value,
+                section: document.getElementById('regSection').value,
+                semester: document.getElementById('regSemester').value,
+                year: document.getElementById('regYear').value,
+                roll_no: document.getElementById('regRoll').value,
+                password: document.getElementById('regPassword').value
+            };
+
+            const errBox = document.getElementById('regErrorMsg');
+            const successBox = document.getElementById('successMsg');
+            errBox.style.display = 'none'; successBox.style.display = 'none';
+
+            if(!data.name || !data.roll_no || !data.password) {
+                errBox.innerText = "❌ Name, Roll No, and Password are required.";
+                errBox.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/signup', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.querySelectorAll('#signupForm input').forEach(input => input.value = '');
+                    successBox.innerHTML = `✅ <strong>Success!</strong><br>Your auto-generated username is:<br><span style="font-size:20px; color:#ffdf00; display:block; margin-top:5px;">${result.username}</span><br>Please wait for Admin approval to login.`;
+                    successBox.style.display = 'block';
+                } else {
+                    errBox.innerText = "❌ " + result.error;
+                    errBox.style.display = 'block';
+                }
+            } catch (err) { errBox.innerText = "Server Error."; errBox.style.display = 'block'; }
+        }
+    </script>
+</body>
+</html>
